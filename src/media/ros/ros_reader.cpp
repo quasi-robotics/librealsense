@@ -4,7 +4,7 @@
 #include <cstring>
 #include "ros_reader.h"
 #include "ds/ds-device-common.h"
-#include "ds/ds5/ds5-private.h"
+#include "ds/d400/d400-private.h"
 #include "ivcam/sr300.h"
 #include "l500/l500-depth.h"
 #include "proc/disparity-transform.h"
@@ -14,7 +14,6 @@
 #include "proc/temporal-filter.h"
 #include "proc/hole-filling-filter.h"
 #include "proc/zero-order.h"
-#include "proc/depth-decompress.h"
 #include "proc/hdr-merge.h"
 #include "proc/sequence-id-filter.h"
 #include "std_msgs/Float32MultiArray.h"
@@ -919,9 +918,9 @@ namespace librealsense
     {
         using namespace ds;
 
-        auto it5 = std::find_if(rs400_sku_pid.begin(), rs400_sku_pid.end(), [&](int ds5_pid)
+        auto it5 = std::find_if(rs400_sku_pid.begin(), rs400_sku_pid.end(), [&](int d400_pid)
         {
-            return pid == ds5_pid;
+            return pid == d400_pid;
         });
 
         return it5 != rs400_sku_pid.end();
@@ -1457,8 +1456,6 @@ namespace librealsense
             return std::make_shared<ExtensionToType<RS2_EXTENSION_HOLE_FILLING_FILTER>::type>();
         case RS2_EXTENSION_ZERO_ORDER_FILTER:
             return std::make_shared<ExtensionToType<RS2_EXTENSION_ZERO_ORDER_FILTER>::type>();
-        case RS2_EXTENSION_DEPTH_HUFFMAN_DECODER:
-            return std::make_shared<ExtensionToType<RS2_EXTENSION_DEPTH_HUFFMAN_DECODER>::type>();
         case RS2_EXTENSION_HDR_MERGE:
             return std::make_shared<ExtensionToType<RS2_EXTENSION_HDR_MERGE>::type>();
         case RS2_EXTENSION_SEQUENCE_ID_FILTER:

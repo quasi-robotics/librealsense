@@ -9,7 +9,6 @@
 #include "metadata.h"
 #include "proc/synthetic-stream.h"
 #include "proc/decimation-filter.h"
-#include "proc/depth-decompress.h"
 #include "global_timestamp_reader.h"
 #include "device-calibration.h"
 
@@ -244,8 +243,6 @@ void log_callback_end( uint32_t fps,
     processing_blocks get_depth_recommended_proccesing_blocks()
     {
         processing_blocks res;
-        auto huffman_decode = std::make_shared<depth_decompression_huffman>();
-        res.push_back(huffman_decode);
 
         auto dec = std::make_shared<decimation_filter>();
         if (dec->supports_option(RS2_OPTION_STREAM_FILTER))
@@ -547,7 +544,7 @@ void log_callback_end( uint32_t fps,
         if (_on_open)
             _on_open(_internal_config);
 
-        _power = move(on);
+        _power = std::move(on);
         _is_opened = true;
 
         try {
@@ -714,6 +711,9 @@ void log_callback_end( uint32_t fps,
             if (rs2_fmt == RS2_FORMAT_MOTION_XYZ32F)
             {
                 auto profile = std::make_shared<motion_stream_profile>(p);
+                if (!profile)
+                    throw librealsense::invalid_value_exception("null pointer passed for argument \"profile\".");
+
                 profile->set_stream_type(fourcc_to_rs2_stream(p.format));
                 profile->set_stream_index(0);
                 profile->set_format(rs2_fmt);
@@ -723,6 +723,9 @@ void log_callback_end( uint32_t fps,
             else
             {
                 auto&& profile = std::make_shared<video_stream_profile>(p);
+                if (!profile)
+                    throw librealsense::invalid_value_exception("null pointer passed for argument \"profile\".");
+
                 profile->set_dims(p.width, p.height);
                 profile->set_stream_type(fourcc_to_rs2_stream(p.format));
                 profile->set_stream_index(0);
@@ -824,8 +827,8 @@ void log_callback_end( uint32_t fps,
         _fps_and_sampling_frequency_per_rs2_stream(fps_and_sampling_frequency_per_rs2_stream),
         _hid_device(hid_device),
         _is_configured_stream(RS2_STREAM_COUNT),
-        _hid_iio_timestamp_reader(move(hid_iio_timestamp_reader)),
-        _custom_hid_timestamp_reader(move(custom_hid_timestamp_reader))
+        _hid_iio_timestamp_reader(std::move(hid_iio_timestamp_reader)),
+        _custom_hid_timestamp_reader(std::move(custom_hid_timestamp_reader))
     {
         register_metadata(RS2_FRAME_METADATA_BACKEND_TIMESTAMP, make_additional_data_parser(&frame_additional_data::backend_timestamp));
 
@@ -1113,7 +1116,7 @@ void log_callback_end( uint32_t fps,
         std::unique_ptr<frame_timestamp_reader> timestamp_reader,
         device* dev)
         : sensor_base(name, dev, (recommended_proccesing_blocks_interface*)this),
-        _device(move(uvc_device)),
+        _device(std::move(uvc_device)),
         _user_count(0),
         _timestamp_reader(std::move(timestamp_reader))
     {
@@ -1172,6 +1175,8 @@ void log_callback_end( uint32_t fps,
     bool iio_hid_timestamp_reader::has_metadata(const std::shared_ptr<frame_interface>& frame) const
     {
         auto f = std::dynamic_pointer_cast<librealsense::frame>(frame);
+        if (!f)
+            throw librealsense::invalid_value_exception("null pointer recieved from dynamic pointer casting.");
 
         if (f->additional_data.metadata_size > 0)
         {
@@ -1327,6 +1332,8 @@ void log_callback_end( uint32_t fps,
     std::shared_ptr<stream_profile_interface> synthetic_sensor::clone_profile(const std::shared_ptr<stream_profile_interface>& profile)
     {
         auto cloned = std::make_shared<stream_profile_base>(platform::stream_profile{});
+        if (!cloned)
+            throw librealsense::invalid_value_exception("null pointer passed for argument \"cloned\".");
 
         if (auto vsp = std::dynamic_pointer_cast<video_stream_profile>(profile))
         {
